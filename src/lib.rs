@@ -10,7 +10,6 @@ use alloy_sol_types::{sol};
 use stylus_sdk::prelude::*;
 use core::fmt; 
 
-// Define the payment status enum in Solidity ABI format
 sol! {
     enum PaymentStatus {
         Pending,
@@ -18,7 +17,6 @@ sol! {
     }
 }
 
-// Define storage structures using Stylus storage types
 sol_storage! {
     #[entrypoint]
         pub struct InvoiceCreation {
