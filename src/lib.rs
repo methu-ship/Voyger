@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use alloy_primitives::{Address, Uint, U256};
 use alloy_sol_types::{sol};
 use stylus_sdk::prelude::*;
+use core::fmt; 
 
 // Define the payment status enum in Solidity ABI format
 sol! {
@@ -57,10 +58,37 @@ sol! {
     error InvalidAmount(uint256 amount);
     error InvalidAddress(address addr);
 }
+impl fmt::Debug for InvoiceDoesNotExist {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "InvoiceDoesNotExist")
+    }
+}
 
+impl fmt::Debug for UnauthorizedAccess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "UnauthorizedAccess")
+    }
+}
 
+impl fmt::Debug for InvoiceAlreadyPaid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "InvoiceAlreadyPaid")
+    }
+}
 
-#[derive(SolidityError)]
+impl fmt::Debug for InvalidAmount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "InvalidAmount")
+    }
+}
+
+impl fmt::Debug for InvalidAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "InvalidAddress")
+    }
+}
+
+#[derive(SolidityError, Debug)]
 pub enum InvoiceError {
     InvoiceDoesNotExist(InvoiceDoesNotExist),
     UnauthorizedAccess(UnauthorizedAccess),
@@ -125,7 +153,7 @@ impl InvoiceCreation {
         invoice_setter.recipient.set(recipient_address);
         invoice_setter.amount.set(amount);
         invoice_setter.timestamp.set(U256::from(current_timestamp));
-        invoice_setter.status.set(Uint::<8, 1>::from(0u8)); // Pending
+        invoice_setter.status.set(Uint::<8, 1>::from(0u8)); 
         invoice_setter.is_active.set(true);
 
         log(
@@ -272,3 +300,26 @@ impl InvoiceCreation {
 }
 
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use stylus_sdk::testing::*;
+    use alloy_primitives::{Address, U256};
+
+    #[test]
+    fn test_create_invoice() {
+        let vm = TestVM::default();
+        let mut c = InvoiceCreation::from(&vm);
+        
+        let recipient = Address::repeat_byte(0x11);
+        let amount = U256::from(1000u64);
+        let invoice_id = c.create_invoice(recipient, amount).unwrap();
+        
+        assert_eq!(c.get_total_invoices(), U256::from(1));
+        assert_eq!(c.get_invoice_status(invoice_id).unwrap(), 0u8); // Pending
+        
+        let recipient_invoices = c.get_invoices_for_address(recipient);
+        assert_eq!(recipient_invoices.len(), 1);
+        assert_eq!(recipient_invoices[0], invoice_id);
+    }
+}
