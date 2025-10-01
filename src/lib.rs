@@ -132,9 +132,7 @@ impl InvoiceCreation {
             }));
         }
 
-        if amount.is_zero() {
-            return Err(InvoiceError::InvalidAmount(InvalidAmount { amount }));
-        }
+          
 
         let sender = self.vm().msg_sender();
         let current_timestamp = self.vm().block_timestamp();
